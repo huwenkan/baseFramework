@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录</title>
+    <!-- 引入 Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- 引入 Element UI -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <!-- 引入 jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../js/utils/httpUtils.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        #app {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            width: 400px;
+            padding: 30px;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .login-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .userPO-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logout-btn {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="login-container">
+        <h2 class="login-title">用户登录</h2>
+        <el-form :model="loginForm" :rules="rules" ref="loginForm" label-width="80px">
+            <el-form-item label="用户名" prop="username">
+                <el-input v-model="loginForm.username" placeholder="请输入用户名"></el-input>
+            </el-form-item>
+            <el-form-item label="密码" prop="password">
+                <el-input v-model="loginForm.password" type="password" placeholder="请输入密码"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="submitForm('loginForm')" style="width: 100%">登录</el-button>
+            </el-form-item>
+        </el-form>
+        <el-alert
+                v-if="alert.show"
+                :title="alert.message"
+                :type="alert.type"
+                show-icon
+                :closable="false">
+        </el-alert>
+    </div>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                username: '',
+                loginForm: {
+                    username: '',
+                    password: ''
+                },
+                alert: {
+                    show: false,
+                    message: '',
+                    type: 'success'
+                },
+                rules: {
+                    username: [
+                        {required: true, message: '请输入用户名', trigger: 'blur'}
+                    ],
+                    password: [
+                        {required: true, message: '请输入密码', trigger: 'blur'}
+                    ]
+                }
+            }
+        },
+        mounted() {
+            // 页面加载时检查会话状态
+            this.checkSession();
+        },
+        methods: {
+            submitForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        this.login();
+                    } else {
+                        return false;
+                    }
+                });
+            },
+            login() {
+                const formData = new FormData();
+                formData.append('username', this.loginForm.username);
+                formData.append('password', this.loginForm.password);
+
+                HttpUtils.httpRequest({
+                    url: '/user/login',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: (response) => {
+                        // 使用 session 时，后端会在响应中设置 JSESSIONID cookie
+                        // 从响应中获取用户名
+                        this.username = response.username || this.loginForm.username;
+
+                        // 将用户名保存到本地存储以便页面刷新后仍可显示
+                        localStorage.setItem('username', this.username);
+
+                        this.alert.show = true;
+                        this.alert.message = '登录成功';
+                        this.alert.type = 'success';
+
+                        // 3秒后跳转到基础页面
+                        setTimeout(() => {
+                            window.location.href = './basePage.html';
+                        }, 1000);
+                    },
+                    error: (xhr, status, error) => {
+                        this.alert.show = true;
+                        this.alert.message = '登录失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : '未知错误');
+                        this.alert.type = 'error';
+
+                        // 3秒后隐藏提示信息
+                        setTimeout(() => {
+                            this.alert.show = false;
+                        }, 3000);
+                    }
+                });
+            },
+            checkSession() {
+                // 检查是否已有登录信息（基于本地存储）
+                const savedUsername = localStorage.getItem('username');
+                if (savedUsername) {
+                    // 发送请求验证会话是否仍然有效
+                    HttpUtils.httpRequest({
+                        url: '/user/checkSession',
+                        type: 'GET',
+                        success: (response) => {
+                            if (response.valid) {
+                                this.isLoggedIn = true;
+                                this.username = savedUsername;
+                            } else {
+                                // 会话已失效，清除本地存储
+                                localStorage.removeItem('username');
+                            }
+                        },
+                        error: () => {
+                            // 请求失败也认为会话无效
+                            localStorage.removeItem('username');
+                        }
+                    });
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>

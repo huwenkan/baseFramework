@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统管理平台</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <!-- 引入 jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 引入自定义HTTP工具 -->
+    <script src="../js/utils/httpUtils.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #app {
+            height: 100vh;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+        .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+        .logo span {
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            color: white;
+        }
+        .welcome {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-container style="height: 100%;">
+        <!-- 顶部导航栏 -->
+        <el-header style="background-color: #409EFF; padding: 0;">
+            <el-row type="flex" justify="space-between" align="middle" style="height: 100%; padding: 0 20px;">
+                <div class="logo">
+                    <img src="./images/logo.png" alt="系统Logo">
+                    <span>系统管理平台</span>
+                </div>
+                <div>
+                    <el-menu
+                        mode="horizontal"
+                        background-color="#409EFF"
+                        text-color="#fff"
+                        active-text-color="#ffd04b"
+                        :default-active="activeNav"
+                        @select="switchNav"
+                        style="border: none;">
+                        <el-menu-item
+                            v-for="nav in userNavigations"
+                            :key="nav.code"
+                            :index="nav.code">
+                            {{ nav.name }}
+                        </el-menu-item>
+                    </el-menu>
+                </div>
+                <div class="user-info">
+                    <el-dropdown @command="handleUserCommand">
+                        <span class="el-dropdown-link" style="color: white; cursor: pointer;">
+                            欢迎，{{ currentUser.username }}
+                            <i class="el-icon-arrow-down el-icon--right"></i>
+                        </span>
+                        <el-dropdown-menu slot="dropdown">
+                            <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                            <el-dropdown-item command="settings">系统设置</el-dropdown-item>
+                            <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                        </el-dropdown-menu>
+                    </el-dropdown>
+                </div>
+            </el-row>
+        </el-header>
+
+        <!-- 主体内容 -->
+        <el-container>
+            <!-- 左侧边栏 -->
+            <el-aside width="200px" style="background-color: #f5f5f5; border-right: 1px solid #e6e6e6;">
+                <div v-if="loadingMenus" style="text-align: center; padding: 50px; color: #999;">
+                    菜单加载中...
+                </div>
+                <el-menu
+                    v-else
+                    :default-active="activeMenu"
+                    background-color="#f5f5f5"
+                    text-color="#333"
+                    active-text-color="#409EFF"
+                    @select="handleMenuSelect">
+                    <template v-for="menu in currentMenus">
+                        <el-menu-item
+                            :key="menu.code"
+                            :index="menu.code">
+                            <span slot="title">{{ menu.name }}</span>
+                        </el-menu-item>
+                    </template>
+                </el-menu>
+            </el-aside>
+
+            <!-- 内容区域 -->
+            <el-main style="padding: 20px; background-color: #fff;">
+                <iframe
+                    v-if="currentPage"
+                    :src="currentPage"
+                    frameborder="0"
+                    style="width: 100%; height: 100%;">
+                </iframe>
+                <div v-else class="welcome">
+                    <h2>欢迎使用系统管理平台</h2>
+                    <p>请选择左侧菜单项开始操作</p>
+                </div>
+            </el-main>
+        </el-container>
+    </el-container>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                currentUser: {
+                    username: '',
+                    id: null
+                },
+                userNavigations: [],      // 用户拥有的导航项
+                navigationMenus: {},      // 导航项对应的菜单集合
+                activeNav: '',            // 当前激活的导航项
+                activeMenu: '',           // 当前激活的菜单项
+                currentPage: '',          // 当前显示的页面
+                loadingMenus: false       // 菜单加载状态
+            }
+        },
+        computed: {
+            // 获取当前导航下的菜单
+            currentMenus() {
+                return this.navigationMenus[this.activeNav] || [];
+            }
+        },
+        mounted() {
+            // 页面加载时初始化用户信息和菜单
+            this.initUserAndMenus();
+        },
+        methods: {
+            // 初始化用户信息和菜单
+            initUserAndMenus() {
+                // 先检查本地存储是否有登录信息
+                const username = localStorage.getItem('username');
+
+                if (username) {
+                    // 如果本地有登录信息，先设置用户名显示
+                    this.currentUser.username = username;
+                    // 获取当前登录用户详细信息
+                    this.loadUserMenus();
+                } else {
+                    // 如果没有登录信息，跳转到登录页面
+                    window.location.href = 'login.html';
+                }
+            },
+
+            // 加载用户菜单权限
+            loadUserMenus() {
+                HttpUtils.httpRequest({
+                    url: '/right/getUserMenu',
+                    type: 'GET',
+                    success: (response) => {
+                        if (response.success) {
+                            this.processUserMenus(response.data);
+                        } else {
+                            this.showMessage('加载菜单失败', 'error');
+                        }
+                    },
+                    error: () => {
+                        this.showMessage('加载菜单失败', 'error');
+                    }
+                });
+            },
+
+            // 处理用户菜单数据
+            processUserMenus(menus) {
+                // 按导航项分组菜单
+                const navigations = [];
+                const menuMap = {};
+
+                menus.forEach(menu => {
+                    // 如果是一级菜单（导航项）
+                    if (menu.type === 'NAVIGATION') {
+                        navigations.push({
+                            code: menu.code,
+                            name: menu.name
+                        });
+                    }
+                    // 如果是二级菜单（侧边栏菜单项）
+                    else if (menu.type === 'MENU') {
+                        const parentCode = menu.parentCode;
+                        if (!menuMap[parentCode]) {
+                            menuMap[parentCode] = [];
+                        }
+                        menuMap[parentCode].push({
+                            code: menu.code,
+                            name: menu.name,
+                            pageUrl: menu.pageUrl
+                        });
+                    }
+                });
+
+                this.userNavigations = navigations;
+                this.navigationMenus = menuMap;
+
+                // 默认激活第一个导航项
+                if (navigations.length > 0) {
+                    this.activeNav = navigations[0].code;
+                }
+            },
+
+            // 切换顶部导航
+            switchNav(navCode) {
+                this.activeNav = navCode;
+                this.activeMenu = '';
+                this.currentPage = '';
+            },
+
+            // 处理菜单选择
+            handleMenuSelect(menuKey) {
+                const menu = this.currentMenus.find(item => item.code === menuKey);
+                if (menu) {
+                    this.activeMenu = menuKey;
+                    this.currentPage = menu.pageUrl;
+                }
+            },
+
+            // 用户下拉菜单处理
+            handleUserCommand(command) {
+                switch(command) {
+                    case 'profile':
+                        this.activeMenu = 'profile';
+                        this.currentPage = './html/profile.html';
+                        break;
+                    case 'settings':
+                        this.activeMenu = 'settings';
+                        this.currentPage = './html/settings.html';
+                        break;
+                    case 'logout':
+                        this.logout();
+                        break;
+                }
+            },
+
+            // 退出登录
+            logout() {
+                HttpUtils.httpRequest({
+                    url: '/user/logout',
+                    type: 'POST',
+                    success: () => {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('username');
+                        window.location.href = 'login.html';
+                    },
+                    error: () => {
+                        this.showMessage('退出登录失败', 'error');
+                        // 即使后端退出失败，也清除本地信息并跳转
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('username');
+                        window.location.href = 'login.html';
+                    }
+                });
+            },
+
+            // 显示消息提示
+            showMessage(message, type = 'success') {
+                this.$message({
+                    message: message,
+                    type: type
+                });
+            }
+        }
+    });
+</script>
+</body>
+</html>

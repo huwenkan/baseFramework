@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权限控制管理</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<div id="app">
+    <el-container>
+        <!-- 左侧菜单 -->
+        <el-aside width="200px" style="background-color: #f5f5f5;">
+            <el-menu
+                    default-active="role"
+                    class="el-menu-vertical-demo"
+                    @select="handleMenuSelect"
+                    background-color="#f5f5f5"
+                    text-color="#333"
+                    active-text-color="#409EFF">
+                <el-menu-item index="role">角色管理</el-menu-item>
+                <el-menu-item index="button">按钮权限管理</el-menu-item>
+                <el-menu-item index="resource">资源权限管理</el-menu-item>
+            </el-menu>
+        </el-aside>
+
+        <!-- 右侧内容 -->
+        <el-main style="padding: 20px;">
+            <div v-if="currentTab === 'role'">
+                <el-row>
+                    <el-col :span="24">
+                        <el-button type="primary" @click="openRoleDialog">新增角色</el-button>
+                        <el-table :data="roles" style="width: 100%; margin-top: 20px;">
+                            <el-table-column prop="roleName" label="角色名称" width="180"></el-table-column>
+                            <el-table-column label="操作">
+                                <template slot-scope="scope">
+                                    <el-button @click="editRole(scope.row)" size="mini">编辑</el-button>
+                                    <el-button @click="deleteRole(scope.row)" type="danger" size="mini">删除</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </el-col>
+                </el-row>
+            </div>
+
+            <div v-if="currentTab === 'button'">
+                <el-row>
+                    <el-col :span="24">
+                        <el-button type="primary" @click="openButtonDialog">新增按钮</el-button>
+                        <el-table :data="buttons" style="width: 100%; margin-top: 20px;">
+                            <el-table-column prop="buttonName" label="按钮名称" width="180"></el-table-column>
+                            <el-table-column label="操作">
+                                <template slot-scope="scope">
+                                    <el-button @click="editButton(scope.row)" size="mini">编辑</el-button>
+                                    <el-button @click="deleteButton(scope.row)" type="danger" size="mini">删除
+                                    </el-button>
+                                    <el-button @click="assignButtonPermissions(scope.row)" type="info" size="mini">
+                                        分配角色
+                                    </el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </el-col>
+                </el-row>
+            </div>
+
+            <div v-if="currentTab === 'resource'">
+                <el-row>
+                    <el-col :span="24">
+                        <el-button type="primary" @click="openResourceDialog">新增资源</el-button>
+                        <el-table :data="resources" style="width: 100%; margin-top: 20px;">
+                            <el-table-column prop="resourceName" label="资源名称" width="180"></el-table-column>
+                            <el-table-column label="操作">
+                                <template slot-scope="scope">
+                                    <el-button @click="editResource(scope.row)" size="mini">编辑</el-button>
+                                    <el-button @click="deleteResource(scope.row)" type="danger" size="mini">删除
+                                    </el-button>
+                                    <el-button @click="assignResourcePermissions(scope.row)" type="info" size="mini">
+                                        分配角色
+                                    </el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </el-col>
+                </el-row>
+            </div>
+        </el-main>
+    </el-container>
+
+    <!-- 角色配置对话框 -->
+    <el-dialog title="角色配置" :visible.sync="roleDialogVisible">
+        <el-form :model="roleForm">
+            <el-form-item label="角色名称" :label-width="formLabelWidth">
+                <el-input v-model="roleForm.roleName" placeholder="请输入角色名称"></el-input>
+            </el-form-item>
+            <el-form-item label="角色描述" :label-width="formLabelWidth">
+                <el-input v-model="roleForm.description" placeholder="请输入角色描述"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="roleDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="saveRole">确 定</el-button>
+        </span>
+    </el-dialog>
+
+    <!-- 按钮配置对话框 -->
+    <el-dialog title="按钮配置" :visible.sync="buttonDialogVisible">
+        <el-form :model="buttonForm">
+            <el-form-item label="按钮名称" :label-width="formLabelWidth">
+                <el-input v-model="buttonForm.buttonName" placeholder="请输入按钮名称"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="buttonDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="saveButton">确 定</el-button>
+        </span>
+    </el-dialog>
+
+    <!-- 资源配置对话框 -->
+    <el-dialog title="资源配置" :visible.sync="resourceDialogVisible">
+        <el-form :model="resourceForm">
+            <el-form-item label="资源名称" :label-width="formLabelWidth">
+                <el-input v-model="resourceForm.resourceName" placeholder="请输入资源名称"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="resourceDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="saveResource">确 定</el-button>
+        </span>
+    </el-dialog>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                currentTab: 'role', // 当前选中的菜单项
+                roles: [], // 存储角色数据
+                buttons: [], // 存储按钮数据
+                resources: [], // 存储资源数据
+                roleDialogVisible: false, // 角色配置对话框
+                buttonDialogVisible: false, // 按钮配置对话框
+                resourceDialogVisible: false, // 资源配置对话框
+                roleForm: {roleName: '', description: ''}, // 角色表单
+                buttonForm: {buttonName: ''}, // 按钮表单
+                resourceForm: {resourceName: ''}, // 资源表单
+                formLabelWidth: '100px'
+            };
+        },
+        methods: {
+            handleMenuSelect(index) {
+                this.currentTab = index;
+            },
+            // 打开角色对话框
+            openRoleDialog() {
+                this.roleForm = {roleName: '', description: ''};
+                this.roleDialogVisible = true;
+            },
+            saveRole() {
+                console.log('保存角色', this.roleForm);
+                this.roleDialogVisible = false;
+            },
+            editRole(role) {
+                console.log('编辑角色', role);
+            },
+            deleteRole(role) {
+                console.log('删除角色', role);
+            },
+            assignPermissions(role) {
+                console.log('为角色分配权限', role);
+            },
+
+            // 打开按钮对话框
+            openButtonDialog() {
+                this.buttonForm = {buttonName: ''};
+                this.buttonDialogVisible = true;
+            },
+            saveButton() {
+                console.log('保存按钮', this.buttonForm);
+                this.buttonDialogVisible = false;
+            },
+            editButton(button) {
+                console.log('编辑按钮', button);
+            },
+            deleteButton(button) {
+                console.log('删除按钮', button);
+            },
+            assignButtonPermissions(button) {
+                console.log('为按钮分配角色', button);
+            },
+
+            // 打开资源对话框
+            openResourceDialog() {
+                this.resourceForm = {resourceName: ''};
+                this.resourceDialogVisible = true;
+            },
+            saveResource() {
+                console.log('保存资源', this.resourceForm);
+                this.resourceDialogVisible = false;
+            },
+            editResource(resource) {
+                console.log('编辑资源', resource);
+            },
+            deleteResource(resource) {
+                console.log('删除资源', resource);
+            },
+            assignResourcePermissions(resource) {
+                console.log('为资源分配角色', resource);
+            }
+        },
+        mounted() {
+            // 示例数据
+            this.roles = [
+                {roleName: '管理员', description: '系统管理员'},
+                {roleName: '普通用户', description: '普通用户权限'}
+            ];
+            this.buttons = [
+                {buttonName: '保存'},
+                {buttonName: '编辑'}
+            ];
+            this.resources = [
+                {resourceName: '用户数据'},
+                {resourceName: '系统日志'}
+            ];
+        }
+    });
+</script>
+</body>
+</html>
