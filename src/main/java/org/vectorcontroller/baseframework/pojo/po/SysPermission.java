@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class SysPermission {
     @TableId(type = IdType.AUTO)
-    private String id;
+    private Long id;
     private String permissionCode;
     private String permissionName;
     private String description;

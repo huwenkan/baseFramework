@@ -9,7 +9,7 @@ import org.vectorcontroller.baseframework.enums.Status;
 @Data
 public class SysMenu {
     @TableId(type = IdType.AUTO)
-    private Integer id;                 // 菜单ID
+    private Long id;                 // 菜单ID
     private String code;                // 菜单唯一标识
     private String name;                // 菜单名称
     private MenuType type;              // 菜单类型（NAVIGATION为导航，MENU为普通菜单）

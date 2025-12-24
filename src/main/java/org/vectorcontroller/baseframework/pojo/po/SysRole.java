@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class SysRole {
     @TableId(type = IdType.AUTO)
-    private String Id;
+    private Long Id;
     private String roleName;
     private String description;
     private String status;

@@ -34,13 +34,13 @@ public class IRightServiceImpl implements IRightService {
      * @return 用户的菜单权限信息
      */
     @Override
-    public Map<String, Object> getUserMenu(String username) {
+    public List<SysMenu> getUserMenu(String username) {
         // 1. 获取用户信息，根据用户名查找用户
         SysUser user = userMapper.selectOne(Wrappers.<SysUser>lambdaQuery().eq(SysUser::getUsername, username));
 
         // 检查用户是否存在
         if (user == null) {
-            throw new BusinessException("用户不存在", "500");
+            throw new BusinessException(500, "用户不存在");
         }
 
         // 2. 获取用户的角色列表（通过中间表 user_role 来查找）
@@ -65,6 +65,6 @@ public class IRightServiceImpl implements IRightService {
         );
 
         // 5. 返回用户的菜单权限
-        return Map.of("menus", menus);
+        return  menus;
     }
 }

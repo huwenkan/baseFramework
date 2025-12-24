@@ -8,11 +8,11 @@ import lombok.Data;
 @Data
 public class SysUser {
     @TableId(type = IdType.AUTO)
-    private String id;
+    private Long id;
     @TableField("username")
     private String username;
     private String password;
-    private String userName;
+    private String displayName;
     private String email;
     private String status;
     private String createTime;

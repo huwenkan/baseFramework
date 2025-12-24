@@ -20,20 +20,33 @@ public class LoginFilter implements Filter {
 
         String uri = request.getRequestURI();
 
-        // 放行登录接口
-        if (uri.endsWith(".html") || uri.endsWith(".css") || uri.endsWith(".js") || uri.endsWith("/user/login")) {
+        // 放行静态资源和登录接口
+        if (isUnprotectedResource(uri)) {
             chain.doFilter(req, res);
             return;
         }
 
-        // 获取 Session
+        // 检查登录状态
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("username") == null) {
-            response.setStatus(401);
-            response.getWriter().write("未登录");
+            // 返回统一格式的JSON响应
+            response.setStatus(200);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"message\":\"请先登录\"}");
             return;
         }
 
         chain.doFilter(req, res);
+    }
+
+    private boolean isUnprotectedResource(String uri) {
+        return uri.endsWith(".html") ||
+               uri.endsWith(".css") ||
+               uri.endsWith(".js") ||
+               uri.endsWith("/user/login") ||
+               uri.endsWith("/baseFramework") ||
+               uri.endsWith("/") ||
+               uri.endsWith(".png") ||
+               uri.endsWith(".jpg");
     }
 }

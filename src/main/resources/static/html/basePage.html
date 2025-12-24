@@ -160,8 +160,7 @@
             // 初始化用户信息和菜单
             initUserAndMenus() {
                 // 先检查本地存储是否有登录信息
-                const username = localStorage.getItem('username');
-
+                const username = sessionStorage.getItem('username');
                 if (username) {
                     // 如果本地有登录信息，先设置用户名显示
                     this.currentUser.username = username;
@@ -179,13 +178,13 @@
                     url: '/right/getUserMenu',
                     type: 'GET',
                     success: (response) => {
-                        if (response.success) {
+                        if (response.code === 200) {
                             this.processUserMenus(response.data);
                         } else {
                             this.showMessage('加载菜单失败', 'error');
                         }
                     },
-                    error: () => {
+                    error: (xhr, status, error) => {
                         this.showMessage('加载菜单失败', 'error');
                     }
                 });
@@ -249,11 +248,11 @@
                 switch(command) {
                     case 'profile':
                         this.activeMenu = 'profile';
-                        this.currentPage = './html/profile.html';
+                        this.currentPage = 'profile.html';
                         break;
                     case 'settings':
                         this.activeMenu = 'settings';
-                        this.currentPage = './html/settings.html';
+                        this.currentPage = 'settings.html';
                         break;
                     case 'logout':
                         this.logout();

@@ -47,11 +47,11 @@ public class LoginController {
         if (user != null) {
             HttpSession session = request.getSession();
             session.setAttribute("username", username);
-            session.setAttribute("userName", user.getUserName());
+            session.setAttribute("displayName", user.getDisplayName());
 
             return ResponseResultVO.success(response);
         } else {
-            return ResponseResultVO.error("400", "用户名或密码错误");
+            return ResponseResultVO.error(400, "用户名或密码错误");
         }
     }
 

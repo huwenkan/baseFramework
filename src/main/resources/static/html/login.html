@@ -39,17 +39,6 @@
             margin-bottom: 30px;
             color: #333;
         }
-
-        .userPO-info {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .logout-btn {
-            display: block;
-            width: 100%;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
@@ -103,8 +92,6 @@
             }
         },
         mounted() {
-            // 页面加载时检查会话状态
-            this.checkSession();
         },
         methods: {
             submitForm(formName) {
@@ -128,57 +115,33 @@
                     processData: false,
                     contentType: false,
                     success: (response) => {
-                        // 使用 session 时，后端会在响应中设置 JSESSIONID cookie
-                        // 从响应中获取用户名
-                        this.username = response.username || this.loginForm.username;
+                        if (response.code === 200) {  // 判断登录是否成功
+                            this.username = response.username || this.loginForm.username;
 
-                        // 将用户名保存到本地存储以便页面刷新后仍可显示
-                        localStorage.setItem('username', this.username);
+                            // 将用户名保存到 sessionStorage
+                            sessionStorage.setItem('username', this.username);
 
-                        this.alert.show = true;
-                        this.alert.message = '登录成功';
-                        this.alert.type = 'success';
+                            this.alert.show = true;
+                            this.alert.message = '登录成功';
+                            this.alert.type = 'success';
 
-                        // 3秒后跳转到基础页面
-                        setTimeout(() => {
-                            window.location.href = './basePage.html';
-                        }, 1000);
+                            // 1秒后跳转到基础页面
+                            setTimeout(() => {
+                                window.location.href = './basePage.html';
+                            }, 1000);
+                        } else {
+                            // 登录失败处理
+                            this.alert.show = true;
+                            this.alert.message = '登录失败: ' + (response.message || '未知错误');
+                            this.alert.type = 'error';
+                        }
                     },
                     error: (xhr, status, error) => {
                         this.alert.show = true;
-                        this.alert.message = '登录失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : '未知错误');
+                        this.alert.message = '登录失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : '网络错误');
                         this.alert.type = 'error';
-
-                        // 3秒后隐藏提示信息
-                        setTimeout(() => {
-                            this.alert.show = false;
-                        }, 3000);
                     }
                 });
-            },
-            checkSession() {
-                // 检查是否已有登录信息（基于本地存储）
-                const savedUsername = localStorage.getItem('username');
-                if (savedUsername) {
-                    // 发送请求验证会话是否仍然有效
-                    HttpUtils.httpRequest({
-                        url: '/user/checkSession',
-                        type: 'GET',
-                        success: (response) => {
-                            if (response.valid) {
-                                this.isLoggedIn = true;
-                                this.username = savedUsername;
-                            } else {
-                                // 会话已失效，清除本地存储
-                                localStorage.removeItem('username');
-                            }
-                        },
-                        error: () => {
-                            // 请求失败也认为会话无效
-                            localStorage.removeItem('username');
-                        }
-                    });
-                }
             }
         }
     });

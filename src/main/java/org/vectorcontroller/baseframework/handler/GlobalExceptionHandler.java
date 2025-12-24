@@ -15,7 +15,7 @@ public class GlobalExceptionHandler {
     // 处理所有的运行时异常
     @ExceptionHandler(RuntimeException.class)
     public ResponseResultVO handleRuntimeException(RuntimeException e) {
-        return ResponseResultVO.error("500", "服务器内部错误");
+        return ResponseResultVO.error(500, "服务器内部错误");
     }
 
     // 处理自定义的业务异常
@@ -27,6 +27,6 @@ public class GlobalExceptionHandler {
     // 处理其他异常
     @ExceptionHandler(Exception.class)
     public ResponseResultVO handleException(Exception e) {
-        return ResponseResultVO.error("500", "服务器内部错误");
+        return ResponseResultVO.error(500, "服务器内部错误");
     }
 }

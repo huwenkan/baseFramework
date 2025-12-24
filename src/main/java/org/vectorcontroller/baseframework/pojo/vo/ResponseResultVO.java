@@ -4,17 +4,17 @@ import lombok.Data;
 
 @Data
 public class ResponseResultVO {
-    private String code;
+    private int code;
     private String message;
     private Object data;
     public static ResponseResultVO success(Object data) {
         ResponseResultVO result = new ResponseResultVO();
-        result.setCode("200");
+        result.setCode(200);
         result.setMessage("操作成功");
         result.setData(data);
         return result;
     }
-    public static ResponseResultVO error(String code, String message) {
+    public static ResponseResultVO error(int code, String message) {
         ResponseResultVO result = new ResponseResultVO();
         result.setCode(code);
         result.setMessage(message);
