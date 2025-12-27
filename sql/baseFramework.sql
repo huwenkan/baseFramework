@@ -6,8 +6,9 @@ CREATE TABLE `sys_user` (
   `user_name` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名称',
   `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
   `status` ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE' COMMENT '状态（激活/未激活）',
-  `create_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+  `create_time` DATE DEFAULT (CURRENT_DATE) COMMENT '创建时间',
+  `update_time` DATE DEFAULT (CURRENT_DATE)  COMMENT '更新时间',
+  `deleted` TINYINT DEFAULT 0 COMMENT '删除标志'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 -- 角色表
 CREATE TABLE `sys_role` (
@@ -15,8 +16,9 @@ CREATE TABLE `sys_role` (
   `role_name` VARCHAR(50) NOT NULL UNIQUE COMMENT '角色名称',
   `description` TEXT DEFAULT NULL COMMENT '角色描述',
   `status` ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE' COMMENT '角色状态',
-  `create_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+  `create_time` DATE DEFAULT (CURRENT_DATE) COMMENT '创建时间',
+  `update_time` DATE DEFAULT (CURRENT_DATE)  COMMENT '更新时间',
+  `deleted` TINYINT DEFAULT 0 COMMENT '删除标志'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色表';
 -- 菜单表
 CREATE TABLE `sys_menu` (
@@ -27,8 +29,9 @@ CREATE TABLE `sys_menu` (
                         `parent_code` VARCHAR(50) DEFAULT NULL COMMENT '父级菜单标识',
                         `page_url` VARCHAR(255) DEFAULT NULL COMMENT '菜单页面URL',
                         `status` ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE' COMMENT '菜单状态',
-                        `create_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                        `update_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+                        `create_time` DATE DEFAULT (CURRENT_DATE) COMMENT '创建时间',
+                        `update_time` DATE DEFAULT (CURRENT_DATE)  COMMENT '更新时间',
+                        `deleted` TINYINT DEFAULT 0 COMMENT '删除标志'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='菜单表';
 -- 用户角色关系表
 CREATE TABLE `sys_user_role` (
@@ -42,8 +45,9 @@ CREATE TABLE `sys_permission` (
                               `permission_code` VARCHAR(100) NOT NULL UNIQUE COMMENT '权限代码',
                               `permission_name` VARCHAR(100) NOT NULL COMMENT '权限名称',
                               `description` TEXT DEFAULT NULL COMMENT '权限描述',
-                              `create_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                              `update_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+                              `create_time` DATE DEFAULT (CURRENT_DATE) COMMENT '创建时间',
+                              `update_time` DATE DEFAULT (CURRENT_DATE) COMMENT '更新时间',
+                              `deleted` TINYINT DEFAULT 0 COMMENT '删除标志'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限表';
 -- 角色权限关系表
 CREATE TABLE `sys_role_permission` (
@@ -57,3 +61,42 @@ CREATE TABLE `sys_role_menu` (
                              `menu_id` INT UNSIGNED NOT NULL COMMENT '菜单ID',
                              PRIMARY KEY (`role_id`, `menu_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色菜单关联表';
+-- 按钮权限表
+CREATE TABLE `sys_button_permission` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `button_code` VARCHAR(100) NOT NULL UNIQUE COMMENT '按钮代码',
+  `button_name` VARCHAR(100) NOT NULL COMMENT '按钮名称',
+  `menu_code` VARCHAR(50) DEFAULT NULL COMMENT '所属菜单',
+  `description` TEXT DEFAULT NULL COMMENT '按钮描述',
+  `status` ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+  `create_time` DATE DEFAULT (CURRENT_DATE) COMMENT '创建时间',
+  `update_time` DATE DEFAULT (CURRENT_DATE) COMMENT '更新时间',
+  `deleted` TINYINT DEFAULT 0 COMMENT '删除标志'
+) COMMENT='按钮权限表';
+
+-- 资源权限表
+CREATE TABLE `sys_resource_permission` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `resource_code` VARCHAR(100) NOT NULL UNIQUE COMMENT '资源代码',
+  `resource_name` VARCHAR(100) NOT NULL COMMENT '资源名称',
+  `resource_type` ENUM('API', 'DATA', 'FILE') DEFAULT NULL COMMENT '资源类型',
+  `resource_path` VARCHAR(255) DEFAULT NULL COMMENT '资源路径',
+  `description` TEXT DEFAULT NULL COMMENT '资源描述',
+  `status` ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+  `create_time` DATE DEFAULT (CURRENT_DATE) COMMENT '创建时间',
+  `update_time` DATE DEFAULT (CURRENT_DATE) COMMENT '更新时间',
+  `deleted` TINYINT DEFAULT 0 COMMENT '删除标志'
+) COMMENT='资源权限表';
+-- 角色按钮权限关联表
+CREATE TABLE `sys_role_button_permission` (
+  `role_id` INT UNSIGNED NOT NULL,
+  `button_permission_id` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`role_id`, `button_permission_id`)
+) COMMENT='角色按钮权限关联表';
+
+-- 角色资源权限关联表
+CREATE TABLE `sys_role_resource_permission` (
+  `role_id` INT UNSIGNED NOT NULL,
+  `resource_permission_id` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`role_id`, `resource_permission_id`)
+) COMMENT='角色资源权限关联表';

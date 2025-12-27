@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../js/utils/httpUtils.js"></script>
 </head>
 <body>
 <div id="app">
@@ -35,6 +36,7 @@
                         <el-button type="primary" @click="openRoleDialog">新增角色</el-button>
                         <el-table :data="roles" style="width: 100%; margin-top: 20px;">
                             <el-table-column prop="roleName" label="角色名称" width="180"></el-table-column>
+                            <el-table-column prop="description" label="角色描述" width="200"></el-table-column>
                             <el-table-column label="操作">
                                 <template slot-scope="scope">
                                     <el-button @click="editRole(scope.row)" size="mini">编辑</el-button>
@@ -42,9 +44,19 @@
                                 </template>
                             </el-table-column>
                         </el-table>
+                        <el-pagination
+                                @size-change="handleRoleSizeChange"
+                                @current-change="handleRoleCurrentChange"
+                                :current-page="roleCurrentPage"
+                                :page-sizes="[10, 20, 50, 100]"
+                                :page-size="rolePageSize"
+                                layout="total, sizes, prev, pager, next, jumper"
+                                :total="roleTotal">
+                        </el-pagination>
                     </el-col>
                 </el-row>
             </div>
+
 
             <div v-if="currentTab === 'button'">
                 <el-row>
@@ -52,6 +64,7 @@
                         <el-button type="primary" @click="openButtonDialog">新增按钮</el-button>
                         <el-table :data="buttons" style="width: 100%; margin-top: 20px;">
                             <el-table-column prop="buttonName" label="按钮名称" width="180"></el-table-column>
+                            <el-table-column prop="description" label="按钮描述" width="200"></el-table-column>
                             <el-table-column label="操作">
                                 <template slot-scope="scope">
                                     <el-button @click="editButton(scope.row)" size="mini">编辑</el-button>
@@ -63,6 +76,15 @@
                                 </template>
                             </el-table-column>
                         </el-table>
+                        <el-pagination
+                                @size-change="handleButtonSizeChange"
+                                @current-change="handleButtonCurrentChange"
+                                :current-page="buttonCurrentPage"
+                                :page-sizes="[10, 20, 50, 100]"
+                                :page-size="buttonPageSize"
+                                layout="total, sizes, prev, pager, next, jumper"
+                                :total="buttonTotal">
+                        </el-pagination>
                     </el-col>
                 </el-row>
             </div>
@@ -73,6 +95,7 @@
                         <el-button type="primary" @click="openResourceDialog">新增资源</el-button>
                         <el-table :data="resources" style="width: 100%; margin-top: 20px;">
                             <el-table-column prop="resourceName" label="资源名称" width="180"></el-table-column>
+                            <el-table-column prop="description" label="资源描述" width="200"></el-table-column>
                             <el-table-column label="操作">
                                 <template slot-scope="scope">
                                     <el-button @click="editResource(scope.row)" size="mini">编辑</el-button>
@@ -84,9 +107,19 @@
                                 </template>
                             </el-table-column>
                         </el-table>
+                        <el-pagination
+                                @size-change="handleResourceSizeChange"
+                                @current-change="handleResourceCurrentChange"
+                                :current-page="resourceCurrentPage"
+                                :page-sizes="[10, 20, 50, 100]"
+                                :page-size="resourcePageSize"
+                                layout="total, sizes, prev, pager, next, jumper"
+                                :total="resourceTotal">
+                        </el-pagination>
                     </el-col>
                 </el-row>
             </div>
+
         </el-main>
     </el-container>
 
@@ -112,12 +145,16 @@
             <el-form-item label="按钮名称" :label-width="formLabelWidth">
                 <el-input v-model="buttonForm.buttonName" placeholder="请输入按钮名称"></el-input>
             </el-form-item>
+            <el-form-item label="按钮描述" :label-width="formLabelWidth">
+                <el-input v-model="buttonForm.description" placeholder="请输入按钮描述"></el-input>
+            </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
-            <el-button @click="buttonDialogVisible = false">取 消</el-button>
-            <el-button type="primary" @click="saveButton">确 定</el-button>
-        </span>
+        <el-button @click="buttonDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="saveButton">确 定</el-button>
+    </span>
     </el-dialog>
+
 
     <!-- 资源配置对话框 -->
     <el-dialog title="资源配置" :visible.sync="resourceDialogVisible">
@@ -125,12 +162,16 @@
             <el-form-item label="资源名称" :label-width="formLabelWidth">
                 <el-input v-model="resourceForm.resourceName" placeholder="请输入资源名称"></el-input>
             </el-form-item>
+            <el-form-item label="资源描述" :label-width="formLabelWidth">
+                <el-input v-model="resourceForm.description" placeholder="请输入资源描述"></el-input>
+            </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
-            <el-button @click="resourceDialogVisible = false">取 消</el-button>
-            <el-button type="primary" @click="saveResource">确 定</el-button>
-        </span>
+        <el-button @click="resourceDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="saveResource">确 定</el-button>
+    </span>
     </el-dialog>
+
 </div>
 
 <script>
@@ -139,21 +180,110 @@
         data() {
             return {
                 currentTab: 'role', // 当前选中的菜单项
-                roles: [], // 存储角色数据
-                buttons: [], // 存储按钮数据
-                resources: [], // 存储资源数据
+                // 角色分页数据
+                roles: [],
+                roleCurrentPage: 1,
+                rolePageSize: 10,
+                roleTotal: 0,
+                // 按钮分页数据
+                buttons: [],
+                buttonCurrentPage: 1,
+                buttonPageSize: 10,
+                buttonTotal: 0,
+                // 资源分页数据
+                resources: [],
+                resourceCurrentPage: 1,
+                resourcePageSize: 10,
+                resourceTotal: 0,
                 roleDialogVisible: false, // 角色配置对话框
                 buttonDialogVisible: false, // 按钮配置对话框
                 resourceDialogVisible: false, // 资源配置对话框
                 roleForm: {roleName: '', description: ''}, // 角色表单
-                buttonForm: {buttonName: ''}, // 按钮表单
-                resourceForm: {resourceName: ''}, // 资源表单
+                buttonForm: {buttonName: '', description: ''}, // 按钮表单
+                resourceForm: {resourceName: '', description: ''}, // 资源表单
                 formLabelWidth: '100px'
             };
         },
         methods: {
             handleMenuSelect(index) {
                 this.currentTab = index;
+                // 根据当前选项卡调用对应的查询方法
+                if (index === 'role') {
+                    this.queryRoles();
+                } else if (index === 'button') {
+                    this.queryButtons();
+                } else if (index === 'resource') {
+                    this.queryResources();
+                }
+            },
+            // 查询角色数据
+            queryRoles() {
+                HttpUtils.httpRequest({
+                    url: '/right/getRole',
+                    type: 'GET',
+                    data: {
+                        pageNum: this.currentPage,
+                        pageSize: this.pageSize
+                    },
+                    success: (response) => {
+                        this.roles = response.data.records;
+                        this.roleTotal = response.data.total;
+                    }
+                });
+            },
+            handleRoleSizeChange(val) {
+                this.rolePageSize = val;
+                this.queryRoles();
+            },
+            handleRoleCurrentChange(val) {
+                this.roleCurrentPage = val;
+                this.queryRoles();
+            },
+            // 按钮分页方法
+            queryButtons() {
+                HttpUtils.httpRequest({
+                    url: '/right/getButton',
+                    type: 'GET',
+                    data: {
+                        pageNum: this.buttonCurrentPage,
+                        pageSize: this.buttonPageSize
+                    },
+                    success: (response) => {
+                        this.buttons = response.data.records;
+                        this.buttonTotal = response.data.total;
+                    }
+                });
+            },
+            handleButtonSizeChange(val) {
+                this.buttonPageSize = val;
+                this.queryButtons();
+            },
+            handleButtonCurrentChange(val) {
+                this.buttonCurrentPage = val;
+                this.queryButtons();
+            },
+            // 资源分页方法
+            queryResources() {
+                HttpUtils.httpRequest({
+                    url: '/right/getResource',
+                    type: 'GET',
+                    data: {
+                        pageNum: this.resourceCurrentPage,
+                        pageSize: this.resourcePageSize
+                    },
+                    success: (response) => {
+                        this.resources = response.data.records;
+                        this.resourceTotal = response.data.total;
+                    }
+                });
+            },
+            handleResourceSizeChange(val) {
+                this.resourcePageSize = val;
+                this.queryResources();
+            },
+            handleResourceCurrentChange(val) {
+                this.resourceCurrentPage = val;
+                this.queryResources();
             },
             // 打开角色对话框
             openRoleDialog() {
@@ -161,33 +291,89 @@
                 this.roleDialogVisible = true;
             },
             saveRole() {
-                console.log('保存角色', this.roleForm);
+                HttpUtils.httpRequest({
+                    url: '/right/saveRole',
+                    type: 'POST',
+                    data: this.roleForm,
+                    success: (response) => {
+                        this.queryResources();
+                        this.$message.success(response.message || '新增成功');
+                    },
+                    error: (response) => {
+                        this.$message.error(response.message || '新增失败');
+                    }
+                });
                 this.roleDialogVisible = false;
             },
             editRole(role) {
                 console.log('编辑角色', role);
             },
+            // 删除角色
             deleteRole(role) {
-                console.log('删除角色', role);
+                this.$confirm('确定要删除此角色吗？', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    HttpUtils.httpRequest({
+                        url: '/right/deleteRole',
+                        type: 'POST',
+                        data: {id: role.id},
+                        success: (response) => {
+                            this.queryRoles();
+                            this.$message.success(response.message || '删除成功');
+                        },
+                        error: (response) => {
+                            this.$message.error(response.message || '删除失败');
+                        }
+                    });
+                });
             },
             assignPermissions(role) {
                 console.log('为角色分配权限', role);
             },
-
             // 打开按钮对话框
             openButtonDialog() {
                 this.buttonForm = {buttonName: ''};
                 this.buttonDialogVisible = true;
             },
             saveButton() {
-                console.log('保存按钮', this.buttonForm);
+                HttpUtils.httpRequest({
+                    url: '/right/saveButton',
+                    type: 'POST',
+                    data: this.buttonForm,
+                    success: (response) => {
+                        this.queryButtons();
+                        this.$message.success(response.message || '新增成功');
+                    },
+                    error: (response) => {
+                        this.$message.error(response.message || '新增失败');
+                    }
+                });
                 this.buttonDialogVisible = false;
             },
             editButton(button) {
                 console.log('编辑按钮', button);
             },
             deleteButton(button) {
-                console.log('删除按钮', button);
+                this.$confirm('确定要删除此按钮吗？', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    HttpUtils.httpRequest({
+                        url: '/right/deleteButton',
+                        type: 'POST',
+                        data: {id: button.id},
+                        success: (response) => {
+                            this.queryButtons();
+                            this.$message.success(response.message || '删除成功');
+                        },
+                        error: (response) => {
+                            this.$message.error(response.message || '删除失败');
+                        }
+                    });
+                });
             },
             assignButtonPermissions(button) {
                 console.log('为按钮分配角色', button);
@@ -199,33 +385,49 @@
                 this.resourceDialogVisible = true;
             },
             saveResource() {
-                console.log('保存资源', this.resourceForm);
+                HttpUtils.httpRequest({
+                    url: '/right/saveResource',
+                    type: 'POST',
+                    data: this.resourceForm,
+                    success: (response) => {
+                        this.queryResources();
+                        this.$message.success(response.message || '新增成功');
+                    },
+                    error: (response) => {
+                        this.$message.error(response.message || '新增失败');
+                    }
+                });
                 this.resourceDialogVisible = false;
             },
             editResource(resource) {
                 console.log('编辑资源', resource);
             },
             deleteResource(resource) {
-                console.log('删除资源', resource);
+                this.$confirm('确定要删除此资源吗？', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    HttpUtils.httpRequest({
+                        url: '/right/deleteResource',
+                        type: 'POST',
+                        data: {id: resource.id},
+                        success: (response) => {
+                            this.queryResources();
+                            this.$message.success(response.message || '删除成功');
+                        },
+                        error: (response) => {
+                            this.$message.error(response.message || '删除失败');
+                        }
+                    });
+                });
             },
             assignResourcePermissions(resource) {
                 console.log('为资源分配角色', resource);
             }
         },
         mounted() {
-            // 示例数据
-            this.roles = [
-                {roleName: '管理员', description: '系统管理员'},
-                {roleName: '普通用户', description: '普通用户权限'}
-            ];
-            this.buttons = [
-                {buttonName: '保存'},
-                {buttonName: '编辑'}
-            ];
-            this.resources = [
-                {resourceName: '用户数据'},
-                {resourceName: '系统日志'}
-            ];
+            this.queryRoles();
         }
     });
 </script>

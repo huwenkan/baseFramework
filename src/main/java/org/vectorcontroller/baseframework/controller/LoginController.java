@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.vectorcontroller.baseframework.pojo.po.SysUser;
+import org.vectorcontroller.baseframework.pojo.po.right.SysUser;
 import org.vectorcontroller.baseframework.pojo.vo.ResponseResultVO;
 import org.vectorcontroller.baseframework.service.IloginService;
 
@@ -36,7 +36,7 @@ public class LoginController {
 
         Map<String, Object> response = new HashMap<>();
 
-        if ("admin".equals(username) && "12345678".equals(password)) {
+        if ("admin".equals(username) && "admin".equals(password)) {
             HttpSession session = request.getSession();
             session.setAttribute("username", username);
             session.setAttribute("name", "管理员");

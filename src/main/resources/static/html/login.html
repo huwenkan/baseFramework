@@ -115,7 +115,6 @@
                     processData: false,
                     contentType: false,
                     success: (response) => {
-                        if (response.code === 200) {  // 判断登录是否成功
                             this.username = response.username || this.loginForm.username;
 
                             // 将用户名保存到 sessionStorage
@@ -129,16 +128,10 @@
                             setTimeout(() => {
                                 window.location.href = './basePage.html';
                             }, 1000);
-                        } else {
-                            // 登录失败处理
-                            this.alert.show = true;
-                            this.alert.message = '登录失败: ' + (response.message || '未知错误');
-                            this.alert.type = 'error';
-                        }
                     },
-                    error: (xhr, status, error) => {
+                    error: (response) => {
                         this.alert.show = true;
-                        this.alert.message = '登录失败: ' + (xhr.responseJSON ? xhr.responseJSON.message : '网络错误');
+                        this.alert.message = '登录失败: ' + response.message || '未知错误';
                         this.alert.type = 'error';
                     }
                 });

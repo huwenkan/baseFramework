@@ -1,4 +1,4 @@
-package org.vectorcontroller.baseframework.pojo.po;
+package org.vectorcontroller.baseframework.pojo.po.right;
 
 import lombok.Data;
 

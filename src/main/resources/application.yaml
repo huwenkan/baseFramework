@@ -4,3 +4,13 @@ spring:
     username: root
     password: wahwk123123.
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+# 日志配置
+logging:
+  level:
+    # 打印 MyBatis SQL 语句
+    com.baomidou.mybatisplus: DEBUG
+    # 打印 SQL 执行详情
+    org.apache.ibatis: DEBUG
+    # 打印 Mapper 接口调用
+    org.vectorcontroller.baseframework.mapper: DEBUG
