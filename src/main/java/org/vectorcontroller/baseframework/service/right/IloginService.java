@@ -1,4 +1,4 @@
-package org.vectorcontroller.baseframework.service;
+package org.vectorcontroller.baseframework.service.right;
 
 import org.vectorcontroller.baseframework.pojo.po.right.SysUser;
 

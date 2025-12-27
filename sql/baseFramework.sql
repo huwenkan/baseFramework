@@ -39,22 +39,6 @@ CREATE TABLE `sys_user_role` (
                              `role_id` INT UNSIGNED NOT NULL COMMENT '角色ID',
                              PRIMARY KEY (`user_id`, `role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户角色关联表';
--- 权限表
-CREATE TABLE `sys_permission` (
-                              `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '权限ID',
-                              `permission_code` VARCHAR(100) NOT NULL UNIQUE COMMENT '权限代码',
-                              `permission_name` VARCHAR(100) NOT NULL COMMENT '权限名称',
-                              `description` TEXT DEFAULT NULL COMMENT '权限描述',
-                              `create_time` DATE DEFAULT (CURRENT_DATE) COMMENT '创建时间',
-                              `update_time` DATE DEFAULT (CURRENT_DATE) COMMENT '更新时间',
-                              `deleted` TINYINT DEFAULT 0 COMMENT '删除标志'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限表';
--- 角色权限关系表
-CREATE TABLE `sys_role_permission` (
-                                   `role_id` INT UNSIGNED NOT NULL COMMENT '角色ID',
-                                   `permission_id` INT UNSIGNED NOT NULL COMMENT '权限ID',
-                                   PRIMARY KEY (`role_id`, `permission_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色权限关联表';
 -- 角色菜单关联表
 CREATE TABLE `sys_role_menu` (
                              `role_id` INT UNSIGNED NOT NULL COMMENT '角色ID',

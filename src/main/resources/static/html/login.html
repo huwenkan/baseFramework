@@ -124,10 +124,10 @@
                             this.alert.message = '登录成功';
                             this.alert.type = 'success';
 
-                            // 1秒后跳转到基础页面
+                            // 0.5秒后跳转到基础页面
                             setTimeout(() => {
                                 window.location.href = './basePage.html';
-                            }, 1000);
+                            }, 600);
                     },
                     error: (response) => {
                         this.alert.show = true;

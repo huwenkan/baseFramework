@@ -1,18 +1,15 @@
-package org.vectorcontroller.baseframework.controller;
+package org.vectorcontroller.baseframework.controller.right;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.vectorcontroller.baseframework.pojo.po.right.SysButtonPermission;
 import org.vectorcontroller.baseframework.pojo.po.right.SysMenu;
 import org.vectorcontroller.baseframework.pojo.po.right.SysResourcePermission;
 import org.vectorcontroller.baseframework.pojo.po.right.SysRole;
 import org.vectorcontroller.baseframework.pojo.vo.ResponseResultVO;
-import org.vectorcontroller.baseframework.service.IRightService;
+import org.vectorcontroller.baseframework.service.right.IRightService;
 
 import java.util.List;
 
@@ -22,11 +19,45 @@ public class RightController {
     @Autowired
     private IRightService rightService;
 
+    /**
+     * 分配角色权限
+     */
+    @PostMapping("/assignPermissions")
+    public ResponseResultVO assignPermissions(Long id, @RequestParam("roleIds") List<Long> roleIds, String type) {
+        rightService.assignPermissions(id, roleIds, type);
+        return ResponseResultVO.success(null);
+    }
+    /**
+     * 获取用户已分配的角色
+     */
+    @GetMapping("/getAssignedRoles")
+    public ResponseResultVO getAssignedRoles(Long id, String type) {
+        List<SysRole> assignedRoles = rightService.getAssignedRoles(id, type);
+        return ResponseResultVO.success(assignedRoles);
+    }
+
+    /**
+     * 获取所有角色
+     */
+    @GetMapping("/getAllRoles")
+    public ResponseResultVO getAllRoles (){
+        return ResponseResultVO.success(rightService.getAllRoles());
+    }
+
     @GetMapping("/getUserMenu")
     public ResponseResultVO getUserRight(HttpServletRequest request) {
         String username = request.getSession().getAttribute("username").toString();
         List<SysMenu> userRight = rightService.getUserMenu(username);
         return ResponseResultVO.success(userRight);
+    }
+
+    /**
+     * 编辑角色
+     */
+    @PostMapping("/updateRole")
+    public ResponseResultVO editRole(SysRole role) {
+        rightService.updateRole(role);
+        return ResponseResultVO.success(null);
     }
 
     /**
@@ -60,6 +91,15 @@ public class RightController {
     }
 
     /**
+     * 编辑按钮权限
+     */
+    @PostMapping("/updateButton")
+    public ResponseResultVO editButton(SysButtonPermission sysButtonPermission) {
+        rightService.updateButton(sysButtonPermission);
+        return ResponseResultVO.success(null);
+    }
+
+    /**
      * 删除按钮权限
      */
     @PostMapping("/deleteButton")
@@ -67,6 +107,7 @@ public class RightController {
         rightService.deleteButton(id);
         return ResponseResultVO.success(null);
     }
+
     /**
      * 保存按钮权限信息
      *
@@ -78,6 +119,7 @@ public class RightController {
         rightService.saveButton(sysButtonPermission);
         return ResponseResultVO.success(null);
     }
+
     /**
      * 分页按钮权限信息
      */
@@ -85,6 +127,14 @@ public class RightController {
     public ResponseResultVO getButton(Integer pageNum, Integer pageSize) {
         Page<SysButtonPermission> result = rightService.getButton(pageNum, pageSize);
         return ResponseResultVO.success(result);
+    }
+    /**
+     * 编辑资源权限
+     */
+    @PostMapping("/updateResource")
+    public ResponseResultVO editResource(SysResourcePermission sysResourcePermission) {
+        rightService.updateResource(sysResourcePermission);
+        return ResponseResultVO.success(null);
     }
 
     /**
@@ -95,6 +145,7 @@ public class RightController {
         rightService.deleteResource(id);
         return ResponseResultVO.success(null);
     }
+
     /**
      * 保存资源权限信息
      *

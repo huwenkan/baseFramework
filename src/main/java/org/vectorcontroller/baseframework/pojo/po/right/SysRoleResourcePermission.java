@@ -5,6 +5,6 @@ import org.vectorcontroller.baseframework.pojo.po.Base;
 
 @Data
 public class SysRoleResourcePermission{
-    private String roleId;
-    private String resourcePermissionId;
+    private Long roleId;
+    private Long resourcePermissionId;
 }

@@ -172,6 +172,27 @@
     </span>
     </el-dialog>
 
+    <!-- 分配角色对话框 -->
+    <el-dialog title="分配角色" :visible.sync="assignDialogVisible" width="500px">
+        <el-form :model="assignForm">
+            <el-form-item label="选择角色" :label-width="formLabelWidth">
+                <el-select v-model="assignForm.selectedRoles" multiple filterable placeholder="请选择角色"
+                           style="width: 100%">
+                    <el-option
+                            v-for="role in allRoles"
+                            :key="role.id"
+                            :label="role.roleName"
+                            :value="role.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="assignDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="confirmAssignPermissions">确 定</el-button>
+        </span>
+    </el-dialog>
+
 </div>
 
 <script>
@@ -198,13 +219,88 @@
                 roleDialogVisible: false, // 角色配置对话框
                 buttonDialogVisible: false, // 按钮配置对话框
                 resourceDialogVisible: false, // 资源配置对话框
+                assignDialogVisible: false, // 分配角色对话框
                 roleForm: {roleName: '', description: ''}, // 角色表单
                 buttonForm: {buttonName: '', description: ''}, // 按钮表单
                 resourceForm: {resourceName: '', description: ''}, // 资源表单
+                assignForm: { // 分配角色表单
+                    type: '', // 'button' 或 'resource'
+                    id: '',
+                    selectedRoles: []
+                },
+                allRoles: [], // 所有角色数据
                 formLabelWidth: '100px'
             };
         },
         methods: {
+            // 分配按钮权限
+            assignButtonPermissions(button) {
+                this.assignForm = {
+                    type: 'button',
+                    id: button.id,
+                    selectedRoles: []
+                };
+                this.loadAssignedRoles(button.id, 'button');
+                this.assignDialogVisible = true;
+            },
+            // 分配资源权限
+            assignResourcePermissions(resource) {
+                this.assignForm = {
+                    type: 'resource',
+                    id: resource.id,
+                    selectedRoles: []
+                };
+                this.loadAssignedRoles(resource.id, 'resource');
+                this.assignDialogVisible = true;
+            },
+            // 加载已分配的角色
+            loadAssignedRoles(id, type) {
+                HttpUtils.httpRequest({
+                    url: `/right/getAssignedRoles`,
+                    type: 'GET',
+                    data: {
+                        id: id,
+                        type: type
+                    },
+                    success: (response) => {
+                        this.assignForm.selectedRoles = response.data.map(role => role.id);
+                    },
+                    error: (error) => {
+                        this.$message.error('加载已分配角色失败');
+                    }
+                });
+            },
+            // 确认分配权限
+            confirmAssignPermissions() {
+                HttpUtils.httpRequest({
+                    url: '/right/assignPermissions',
+                    type: 'POST',
+                    data: {
+                        id: this.assignForm.id,
+                        roleIds: this.assignForm.selectedRoles,
+                        type: this.assignForm.type
+                    },
+                    success: (response) => {
+                        this.assignDialogVisible = false;
+                        this.$message.success(response.message || '分配成功');
+                    },
+                    error: (response) => {
+                        this.$message.error(response.message || '分配失败');
+                    }
+                });
+            },
+            getAllRoles() {
+                HttpUtils.httpRequest({
+                    url: '/right/getAllRoles', // 假设后端提供此接口
+                    type: 'GET',
+                    success: (response) => {
+                        this.allRoles = response.data;
+                    },
+                    error: (error) => {
+                        this.$message.error('获取角色列表失败');
+                    }
+                });
+            },
             handleMenuSelect(index) {
                 this.currentTab = index;
                 // 根据当前选项卡调用对应的查询方法
@@ -291,24 +387,29 @@
                 this.roleDialogVisible = true;
             },
             saveRole() {
+                const url = this.roleForm.id ? '/right/updateRole' : '/right/saveRole';
                 HttpUtils.httpRequest({
-                    url: '/right/saveRole',
+                    url: url,
                     type: 'POST',
                     data: this.roleForm,
                     success: (response) => {
-                        this.queryResources();
-                        this.$message.success(response.message || '新增成功');
+                        this.queryRoles();
+                        this.$message.success(response.message || (this.roleForm.id ? '更新成功' : '新增成功'));
                     },
                     error: (response) => {
-                        this.$message.error(response.message || '新增失败');
+                        this.$message.error(response.message || (this.roleForm.id ? '更新失败' : '新增失败'));
                     }
                 });
                 this.roleDialogVisible = false;
             },
             editRole(role) {
-                console.log('编辑角色', role);
+                this.roleForm = {
+                    id: role.id,
+                    roleName: role.roleName,
+                    description: role.description
+                };
+                this.roleDialogVisible = true;
             },
-            // 删除角色
             deleteRole(role) {
                 this.$confirm('确定要删除此角色吗？', '提示', {
                     confirmButtonText: '确定',
@@ -329,7 +430,7 @@
                     });
                 });
             },
-            assignPermissions(role) {
+            assignRolePermissions(role) {
                 console.log('为角色分配权限', role);
             },
             // 打开按钮对话框
@@ -338,22 +439,28 @@
                 this.buttonDialogVisible = true;
             },
             saveButton() {
+                const url = this.buttonForm.id ? '/right/updateButton' : '/right/saveButton';
                 HttpUtils.httpRequest({
-                    url: '/right/saveButton',
+                    url: url,
                     type: 'POST',
                     data: this.buttonForm,
                     success: (response) => {
                         this.queryButtons();
-                        this.$message.success(response.message || '新增成功');
+                        this.$message.success(response.message || (this.buttonForm.id ? '更新成功' : '新增成功'));
                     },
                     error: (response) => {
-                        this.$message.error(response.message || '新增失败');
+                        this.$message.error(response.message || (this.buttonForm.id ? '更新失败' : '新增失败'));
                     }
                 });
                 this.buttonDialogVisible = false;
             },
             editButton(button) {
-                console.log('编辑按钮', button);
+                this.buttonForm = {
+                    id: button.id,
+                    buttonName: button.buttonName,
+                    description: button.description
+                };
+                this.buttonDialogVisible = true;
             },
             deleteButton(button) {
                 this.$confirm('确定要删除此按钮吗？', '提示', {
@@ -375,32 +482,34 @@
                     });
                 });
             },
-            assignButtonPermissions(button) {
-                console.log('为按钮分配角色', button);
-            },
-
             // 打开资源对话框
             openResourceDialog() {
                 this.resourceForm = {resourceName: ''};
                 this.resourceDialogVisible = true;
             },
             saveResource() {
+                const url = this.resourceForm.id ? '/right/updateResource' : '/right/saveResource';
                 HttpUtils.httpRequest({
-                    url: '/right/saveResource',
+                    url: url,
                     type: 'POST',
                     data: this.resourceForm,
                     success: (response) => {
                         this.queryResources();
-                        this.$message.success(response.message || '新增成功');
+                        this.$message.success(response.message || (this.resourceForm.id ? '更新成功' : '新增成功'));
                     },
                     error: (response) => {
-                        this.$message.error(response.message || '新增失败');
+                        this.$message.error(response.message || (this.resourceForm.id ? '更新失败' : '新增失败'));
                     }
                 });
                 this.resourceDialogVisible = false;
             },
             editResource(resource) {
-                console.log('编辑资源', resource);
+                this.resourceForm = {
+                    id: resource.id,
+                    resourceName: resource.resourceName,
+                    description: resource.description
+                };
+                this.resourceDialogVisible = true;
             },
             deleteResource(resource) {
                 this.$confirm('确定要删除此资源吗？', '提示', {
@@ -422,12 +531,10 @@
                     });
                 });
             },
-            assignResourcePermissions(resource) {
-                console.log('为资源分配角色', resource);
-            }
         },
         mounted() {
             this.queryRoles();
+            this.getAllRoles(); // 获取所有角色
         }
     });
 </script>

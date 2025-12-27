@@ -1,4 +1,4 @@
-package org.vectorcontroller.baseframework.controller;
+package org.vectorcontroller.baseframework.controller.right;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.vectorcontroller.baseframework.pojo.po.right.SysUser;
 import org.vectorcontroller.baseframework.pojo.vo.ResponseResultVO;
-import org.vectorcontroller.baseframework.service.IloginService;
+import org.vectorcontroller.baseframework.service.right.IloginService;
 
 import java.util.HashMap;
 import java.util.Map;
