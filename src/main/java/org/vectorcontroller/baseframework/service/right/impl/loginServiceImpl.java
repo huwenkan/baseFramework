@@ -5,7 +5,7 @@ import org.vectorcontroller.baseframework.pojo.po.right.SysUser;
 import org.vectorcontroller.baseframework.service.right.IloginService;
 
 @Service
-public class IloginServiceImpl implements IloginService {
+public class loginServiceImpl implements IloginService {
 
     @Override
     public SysUser checkLogin(String username, String password) {

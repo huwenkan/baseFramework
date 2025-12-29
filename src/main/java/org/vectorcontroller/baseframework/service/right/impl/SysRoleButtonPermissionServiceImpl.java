@@ -7,6 +7,6 @@ import org.vectorcontroller.baseframework.pojo.po.right.SysRoleButtonPermission;
 import org.vectorcontroller.baseframework.service.right.ISysRoleButtonPermissionService;
 
 @Service
-public class ISysRoleButtonPermissionServiceImpl extends ServiceImpl<SysRoleButtonPermissionMapper, SysRoleButtonPermission> implements ISysRoleButtonPermissionService {
+public class SysRoleButtonPermissionServiceImpl extends ServiceImpl<SysRoleButtonPermissionMapper, SysRoleButtonPermission> implements ISysRoleButtonPermissionService {
 
 }

@@ -7,5 +7,5 @@ import org.vectorcontroller.baseframework.pojo.po.right.SysRoleResourcePermissio
 import org.vectorcontroller.baseframework.service.right.ISysRoleResourcePermissionService;
 
 @Service
-public class ISysRoleResourcePermissionServiceImpl extends ServiceImpl<SysRoleResourcePermissionMapper, SysRoleResourcePermission> implements ISysRoleResourcePermissionService {
+public class SysRoleResourcePermissionServiceImpl extends ServiceImpl<SysRoleResourcePermissionMapper, SysRoleResourcePermission> implements ISysRoleResourcePermissionService {
 }

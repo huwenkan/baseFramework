@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../js/utils/httpUtils.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        #app {
+            margin: 20px;
+        }
+
+        .user-table-container {
+            margin-top: 20px;
+        }
+
+        .el-button {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-row>
+        <el-col :span="24">
+            <el-button type="primary" @click="showAddUserDialog">新增用户</el-button>
+            <el-button type="danger" @click="deleteUser" :disabled="selectedUserIds.length === 0">删除用户</el-button>
+        </el-col>
+    </el-row>
+
+    <!-- 用户列表 -->
+    <el-table :data="users" style="width: 100%" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55"></el-table-column>
+        <el-table-column label="用户名" prop="username"></el-table-column>
+        <el-table-column label="用户名称" prop="displayName"></el-table-column>
+        <el-table-column label="邮箱" prop="email"></el-table-column>
+        <el-table-column label="状态" prop="status"></el-table-column>
+        <el-table-column label="操作">
+            <template slot-scope="scope">
+                <el-button size="small" @click="showEditUserDialog(scope.row)">编辑</el-button>
+                <el-button size="small" type="danger" @click="deleteSingleUser(scope.row.id)">删除</el-button>
+                <el-button size="small" @click="showRoleAssignmentDialog(scope.row)">分配角色</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+
+    <!-- 分页组件 -->
+    <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="pagination.page"
+            :page-sizes="[10, 20, 50, 100]"
+            :page-size="pagination.size"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="pagination.total">
+    </el-pagination>
+
+
+    <!-- 新增/编辑用户对话框 -->
+    <el-dialog :visible.sync="addEditDialogVisible" title="用户信息" width="400px">
+        <el-form :model="userForm" :rules="userFormRules" ref="userForm" label-width="80px">
+            <el-form-item label="用户名" prop="username">
+                <el-input v-model="userForm.username" placeholder="请输入用户名"></el-input>
+            </el-form-item>
+            <el-form-item label="用户名称" prop="displayName">
+                <el-input v-model="userForm.displayName" placeholder="请输入用户名称"></el-input>
+            </el-form-item>
+            <el-form-item label="邮箱" prop="email">
+                <el-input v-model="userForm.email" placeholder="请输入邮箱"></el-input>
+            </el-form-item>
+            <el-form-item label="状态" prop="status">
+                <el-select v-model="userForm.status" placeholder="请选择状态">
+                    <el-option label="激活" value="ACTIVE"></el-option>
+                    <el-option label="未激活" value="INACTIVE"></el-option>
+                </el-select>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="addEditDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="submitUserForm">提交</el-button>
+        </span>
+    </el-dialog>
+
+    <!-- 角色分配对话框 -->
+    <el-dialog :visible.sync="roleAssignmentDialogVisible" title="分配角色" width="400px">
+        <el-form :model="roleForm" ref="roleForm" label-width="80px">
+            <el-form-item label="角色" prop="role_id">
+                <el-select v-model="roleForm.role_id" placeholder="请选择角色">
+                    <el-option v-for="role in roles" :key="role.id" :label="role.role_name"
+                               :value="role.id"></el-option>
+                </el-select>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="roleAssignmentDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="assignRoleToUser">提交</el-button>
+        </span>
+    </el-dialog>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                users: [],
+                roles: [],
+                selectedUserIds: [],
+                userForm: {
+                    username: '',
+                    displayName: '',
+                    email: '',
+                    status: 'ACTIVE'
+                },
+                roleForm: {
+                    role_id: ''
+                },
+                userFormRules: {
+                    username: [
+                        {required: true, message: '请输入用户名', trigger: 'blur'}
+                    ],
+                    displayName: [
+                        {required: true, message: '请输入用户名称', trigger: 'blur'}
+                    ],
+                    email: [
+                        {type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur'}
+                    ],
+                    status: [
+                        {required: true, message: '请选择状态', trigger: 'change'}
+                    ]
+                },
+                addEditDialogVisible: false,
+                roleAssignmentDialogVisible: false,
+                // 新增分页相关数据
+                pagination: {
+                    page: 1,
+                    size: 10,
+                    total: 0
+                }
+            };
+        },
+        mounted() {
+            this.fetchUsers();
+            this.fetchRoles();
+        },
+        methods: {
+            fetchUsers() {
+                HttpUtils.httpRequest({
+                    url: '/user/list',
+                    type: 'GET',
+                    data: {
+                        page: this.pagination.page,
+                        size: this.pagination.size
+                    },
+                    success: (response) => {
+                        // 假设后端返回的数据结构为 { data: [...], total: 100 }
+                        this.users = response.data.records;
+                        this.pagination.total = response.data.total; // 根据实际后端返回调整
+                    }
+                });
+            },
+            // 每页条数变化时
+            handleSizeChange(val) {
+                this.pagination.size = val;
+                this.pagination.page = 1; // 重置为第一页
+                this.fetchUsers();
+            },
+
+            // 当前页变化时
+            handleCurrentChange(val) {
+                this.pagination.page = val;
+                this.fetchUsers();
+            },
+            fetchRoles() {
+                HttpUtils.httpRequest({
+                    url: '/right/getAllRoles', // 假设这是获取角色列表的接口
+                    type: 'GET',
+                    success: (response) => {
+                        this.roles = response.data;
+                    }
+                });
+            },
+            handleSelectionChange(val) {
+                this.selectedUserIds = val.map(user => user.id);
+            },
+            showAddUserDialog() {
+                this.userForm = {username: '', displayName: '', email: '', status: 'ACTIVE'};
+                this.addEditDialogVisible = true;
+            },
+            showEditUserDialog(user) {
+                this.userForm = {...user};
+                this.addEditDialogVisible = true;
+            },
+            submitUserForm() {
+                const formData = new FormData();
+                for (let key in this.userForm) {
+                    formData.append(key, this.userForm[key]);
+                }
+
+                HttpUtils.httpRequest({
+                    url: this.userForm.id ? '/user/update' : '/user/create', // 假设更新或创建的接口
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: (response) => {
+                        this.fetchUsers();
+                        this.addEditDialogVisible = false;
+                        this.$message.success('操作成功');
+                    },
+                    error: (response) => {
+                        this.$message.error('操作失败');
+                    }
+                });
+            },
+            deleteUser() {
+                HttpUtils.httpRequest({
+                    url: '/user/delete', // 假设删除的接口
+                    type: 'POST',
+                    data: {ids: this.selectedUserIds},
+                    success: (response) => {
+                        this.fetchUsers();
+                        this.$message.success('删除成功');
+                    },
+                    error: (response) => {
+                        this.$message.error('删除失败');
+                    }
+                });
+            },
+            deleteSingleUser(userId) {
+                HttpUtils.httpRequest({
+                    url: '/user/delete', // 假设删除的接口
+                    type: 'POST',
+                    data: {ids: [userId]},
+                    success: (response) => {
+                        this.fetchUsers();
+                        this.$message.success('删除成功');
+                    },
+                    error: (response) => {
+                        this.$message.error('删除失败');
+                    }
+                });
+            },
+            showRoleAssignmentDialog(user) {
+                this.roleForm.role_id = ''; // 默认没有选中角色
+                this.roleAssignmentDialogVisible = true;
+                this.selectedUserId = user.id; // 保存当前用户ID
+            },
+            assignRoleToUser() {
+                const formData = new FormData();
+                formData.append('user_id', this.selectedUserId);
+                formData.append('role_id', this.roleForm.role_id);
+
+                HttpUtils.httpRequest({
+                    url: '/user/assign-role', // 假设角色分配的接口
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: (response) => {
+                        this.fetchUsers();
+                        this.roleAssignmentDialogVisible = false;
+                        this.$message.success('角色分配成功');
+                    },
+                    error: (response) => {
+                        this.$message.error('角色分配失败');
+                    }
+                });
+            }
+        }
+    });
+</script>
+</body>
+</html>

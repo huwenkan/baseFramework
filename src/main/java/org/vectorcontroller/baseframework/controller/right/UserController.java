@@ -1,14 +1,14 @@
 package org.vectorcontroller.baseframework.controller.right;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.vectorcontroller.baseframework.pojo.po.right.SysRole;
 import org.vectorcontroller.baseframework.pojo.po.right.SysUser;
 import org.vectorcontroller.baseframework.pojo.vo.ResponseResultVO;
+import org.vectorcontroller.baseframework.service.right.ISysUerService;
 import org.vectorcontroller.baseframework.service.right.IloginService;
 
 import java.util.HashMap;
@@ -16,10 +16,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/user")
-public class LoginController {
+public class UserController {
 
     @Autowired
     private IloginService loginService;
+
+    @Autowired
+    private ISysUerService sysUerService;
 
     /**
      * 用户登录接口
@@ -66,5 +69,21 @@ public class LoginController {
         request.getSession().invalidate();
         response.put("message", "登出成功");
         return ResponseResultVO.success(response);
+    }
+
+    /**
+     * 分页查询用户信息接口
+     */
+    @GetMapping("/list")
+    public ResponseResultVO list(Integer pageNum, Integer pageSize) {
+        // 分页查询用户信息
+        // 设置默认值
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 10;
+
+        // 创建分页对象
+        Page<SysUser> page = new Page<>(pageNum, pageSize);
+
+        return ResponseResultVO.success(sysUerService.page(page));
     }
 }

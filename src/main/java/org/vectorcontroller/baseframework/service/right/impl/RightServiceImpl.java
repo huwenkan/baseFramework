@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class IRightServiceImpl implements IRightService {
+public class RightServiceImpl implements IRightService {
 
     @Autowired
     private SysUserMapper sysUserMapper;
@@ -182,11 +182,21 @@ public class IRightServiceImpl implements IRightService {
         sysResourcePermissionMapper.updateById(sysResourcePermission);
     }
 
+    /**
+     * 获取所有角色
+     * @return
+     */
     @Override
     public List<SysRole> getAllRoles() {
         return sysRoleMapper.selectList(null);
     }
 
+    /**
+     * 获取已分配的角色
+     * @param id   用户id
+     * @param type 用户类型
+     * @return
+     */
     @Override
     public List<SysRole> getAssignedRoles(Long id, String type) {
         List<Long> roleIds;
@@ -221,6 +231,12 @@ public class IRightServiceImpl implements IRightService {
                 .in(SysRole::getId, roleIds));
     }
 
+    /**
+     * 分配权限
+     * @param id  用户id
+     * @param roleIds  角色id
+     * @param type    用户类型
+     */
     @Override
     public void assignPermissions(Long id, List<Long> roleIds, String type) {
         if (roleIds == null || roleIds.isEmpty()) {
@@ -273,7 +289,6 @@ public class IRightServiceImpl implements IRightService {
         }
     }
 
-
     /**
      * 获取用户菜单权限
      *
@@ -307,10 +322,6 @@ public class IRightServiceImpl implements IRightService {
                 .distinct() // 去重
                 .collect(Collectors.toList());
 
-        // 4. 根据菜单ID查询菜单信息
-        List<SysMenu> menus = sysMenuMapper.selectList(Wrappers.<SysMenu>lambdaQuery().in(SysMenu::getId, menuIds));
-
-        // 5. 返回用户的菜单权限
-        return menus;
+        return sysMenuMapper.selectList(Wrappers.<SysMenu>lambdaQuery().in(SysMenu::getId, menuIds));
     }
 }
